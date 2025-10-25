@@ -3,7 +3,7 @@ import { nanoid } from "nanoid";
 
 export interface IURL extends Document {
     shortId: string
-    originaUrl: string
+    originalUrl: string
     clicks: number
     createdAt: Date
 }
@@ -16,7 +16,7 @@ const urlSchema = new Schema<IURL>(
             unique: true,
             default: () => nanoid(6)
         },
-        originaUrl: {
+        originalUrl: {
             type: String,
             required: true,
             trim: true,

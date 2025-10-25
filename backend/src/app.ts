@@ -2,6 +2,7 @@ import morgan from 'morgan'
 import express from 'express'
 import cors from 'cors'
 import PKG from '../package.json'
+import routeHandler from './routes/api/main.routes'
 
 const app = express()
 
@@ -15,12 +16,8 @@ app.use(cors())
 app.set('etag', false)
 
 // APIs
-//
-
-app.get('/', (req, res) => {
-    res.redirect('/api')
-})
-
+routeHandler(app, 'api')
+app.get('/', (req, res) => res.redirect('/api'))
 app.get('/api', (req, res) => {
     res.status(200).json({
         name: PKG.name,
