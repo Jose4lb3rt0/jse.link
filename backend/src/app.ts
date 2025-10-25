@@ -3,6 +3,7 @@ import express from 'express'
 import cors from 'cors'
 import PKG from '../package.json'
 import routeHandler from './routes/api/main.routes'
+import docsHandler from './routes/docs/docs.routes'
 
 const app = express()
 
@@ -17,7 +18,10 @@ app.set('etag', false)
 
 // APIs
 routeHandler(app, 'api')
+docsHandler(app, 'docs')
+
 app.get('/', (req, res) => res.redirect('/api'))
+
 app.get('/api', (req, res) => {
     res.status(200).json({
         name: PKG.name,
