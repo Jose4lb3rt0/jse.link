@@ -27,7 +27,7 @@ export default function Home() {
   }
 
   const shortUrl = createUrl.data?.data?.shortId
-    ? `${API_BASE_URL}/api/urls/${createUrl.data.data.shortId}`
+    ? `${API_BASE_URL}/${createUrl.data.data.shortId}`
     : null
 
   return (
