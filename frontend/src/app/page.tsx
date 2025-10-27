@@ -1,18 +1,29 @@
 "use client"
 
 import { useUrls } from "@/hooks/useUrls"
+import { UrlFormData, urlSchema } from "@/schemas/urlSchema"
+import { zodResolver } from "@hookform/resolvers/zod"
 import { FormEvent, useState } from "react"
+import { useForm } from "react-hook-form"
 import { Toaster } from "sonner"
 
 export default function Home() {
   const [url, setUrl] = useState("")
   const { createUrl } = useUrls()
 
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors }
+  } = useForm<UrlFormData>({
+    resolver: zodResolver(urlSchema)
+  })
+
   const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    createUrl.mutate(url)
+  const onSubmit = (data: UrlFormData) => {
+    createUrl.mutate(data.originalUrl, { /*onSuccess: (res) => reset()*/ })
   }
 
   const shortUrl = createUrl.data?.data?.shortId
@@ -22,11 +33,12 @@ export default function Home() {
   return (
     <div className="w-full">
       <div className="max-w-2xl mx-auto bg-white p-5 rounded-md">
-        <form onSubmit={handleSubmit} className="flex gap-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="flex gap-4">
           <input
             type="url"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
+            // value={url}
+            // onChange={(e) => setUrl(e.target.value)}
+            {...register("originalUrl")}
             placeholder="https://example.com"
             required
             className="border px-2 py-1 rounded text-black w-full"
@@ -40,7 +52,7 @@ export default function Home() {
           </button>
         </form>
 
-        {createUrl.error && <p className="text-red-500 mt-4">Error: {(createUrl.error as Error).message}</p>}
+        {errors.originalUrl && <p className="text-red-500 mt-4">Error: {errors.originalUrl.message}</p>}
 
         {shortUrl && (
           <div className="mt-4">
