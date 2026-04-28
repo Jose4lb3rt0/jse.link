@@ -40,6 +40,8 @@ export const redirectToOriginal = async (req: Request, res: Response<ApiResponse
         const cachedURL = await redisClient.get(shortId) // agarrar la key
         if (cachedURL) {
             console.log(`⚡ URL obtenida desde Redis: ${cachedURL}`)
+
+            await URL.updateOne({ shortId }, { $inc: { clicks: 1 } })
             return res.redirect(cachedURL)
         }
 
