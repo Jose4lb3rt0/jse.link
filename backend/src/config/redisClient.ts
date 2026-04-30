@@ -16,9 +16,9 @@ export const connectRedis = async () => {
 
     try {
         await redisClient.connect()
-        console.log("Redis conectado")
+        console.log("✅💻 -> Redis conectado")
     } catch (error) {
-        console.warn("Redis no disponible. La app seguirá funcionando sin cache compartido.")
+        console.warn("❌💻 -> Redis no disponible. La app seguirá funcionando sin cache compartido.")
         console.warn(error)
     }
 }

@@ -16,6 +16,11 @@ const mongoUri =
     `mongodb+srv://${process.env.DATABASE_USER}:${process.env.DATABASE_PASSWORD}@${process.env.DATABASE_HOST}/${process.env.DATABASE_NAME || ""}?retryWrites=true&w=majority&appName=${process.env.DATABASE_CLUSTER || "Cluster0"}`
 
 export const env = {
+    allowedOrigins: (process.env.ALLOWED_ORIGINS || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean),
+
     nodeEnv: process.env.NODE_ENV || "development",
     port: parseNumber(process.env.PORT, 5000),
     baseUrl: process.env.BASE_URL || `http://localhost:${parseNumber(process.env.PORT, 5000)}`,

@@ -86,7 +86,7 @@ export default function Shortener() {
                 </div>
             )}
 
-            <Toaster richColors position="top-center" />
+            {/* <Toaster richColors position="top-center" /> */}
         </div>
     );
 }
