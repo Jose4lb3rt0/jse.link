@@ -1,10 +1,13 @@
-import { apiFetch } from "@/api/apibase";
-import { ApiResponse, URL } from "@/types/api";
+import { apiFetch, API_BASE_URL } from "@/api/apibase";
+import { ApiResponse, ShortUrlResponse } from "@/types/api";
 
 export async function createUrl(originalUrl: string) {
-    return apiFetch<ApiResponse<URL>>('/urls', { method: 'POST', body: JSON.stringify({ originalUrl }) })
+    return apiFetch<ApiResponse<ShortUrlResponse>>("/urls", {
+        method: "POST",
+        body: JSON.stringify({ originalUrl })
+    })
 }
 
 export async function getOriginalUrl(shortId: string) {
-    return apiFetch<ApiResponse<URL>>(`/urls/${shortId}`)
+    return `${API_BASE_URL}/${shortId}`
 }

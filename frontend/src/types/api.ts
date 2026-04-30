@@ -1,14 +1,15 @@
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
     success: boolean
     message?: string
     data?: T
 }
 
-export interface URL {
-    _id: string
+export interface ShortUrlResponse {
     shortId: string
+    shortUrl: string
     originalUrl: string
     clicks: number
+    expiresAt: string | null
     createdAt: string
-    updatedAt: string
+    note?: string
 }

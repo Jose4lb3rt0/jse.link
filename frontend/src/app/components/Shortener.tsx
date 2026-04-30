@@ -4,9 +4,9 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { Toaster } from "sonner";
+import { API_BASE_URL } from "@/api/apibase";
 
 export default function Shortener() {
-    const [url, setUrl] = useState("")
     const [copied, setCopied] = useState(false)
     const { createUrl } = useUrls()
     const {
@@ -19,10 +19,13 @@ export default function Shortener() {
     })
 
     const onSubmit = (data: UrlFormData) => {
-        createUrl.mutate(data.originalUrl, { /*onSuccess: (res) => reset()*/ })
+        createUrl.mutate(data.originalUrl, {
+            onSuccess: () => {
+                reset()
+                setCopied(false)
+            }
+        })
     }
-
-    const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
 
     const shortUrl = createUrl.data?.data?.shortId
         ? `${API_BASE_URL}/${createUrl.data.data.shortId}`
@@ -41,8 +44,8 @@ export default function Shortener() {
 
     return (
         <div className="w-full max-w-3xl mx-auto p-8 rounded-2xl bg-white/5 border border-white/10 backdrop-blur-md shadow-2xl">
-            <form onSubmit={handleSubmit(onSubmit)} className="flex space-x-4">
-                <div className="relative flex-grow">
+            <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4 sm:flex-row sm:items-start">
+                <div className="relative flex-grow min-w-0">
                     <input
                         type="url"
                         {...register("originalUrl")}
@@ -54,21 +57,24 @@ export default function Shortener() {
                 <button
                     disabled={createUrl.isPending}
                     type="submit"
-                    className="bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap"
+                    className="bg-indigo-500 hover:bg-indigo-400 disabled:opacity-60 disabled:cursor-not-allowed text-white px-4 py-2 rounded-xl font-semibold transition-all whitespace-nowrap"
                 >
                     {createUrl.isPending ? "Acortando..." : "Acortar URL"}
                 </button>
             </form>
 
             {errors.originalUrl && <p className="text-red-500 mt-4">Error: {errors.originalUrl.message}</p>}
+            {createUrl.error && !errors.originalUrl && (
+                <p className="text-red-500 mt-4">Error: {createUrl.error.message}</p>
+            )}
 
             {shortUrl && (
-                <div className="flex mt-5 items-center justify-between bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-6 py-4">
+                <div className="flex mt-5 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-indigo-500/10 border border-indigo-500/20 rounded-xl px-6 py-4">
                     <a
                         href={shortUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-indigo-400 underline font-medium"
+                        className="text-indigo-400 underline font-medium break-all"
                     >
                         {shortUrl}
                     </a>
@@ -80,7 +86,7 @@ export default function Shortener() {
                 </div>
             )}
 
-            {/* <Toaster /> */}
+            <Toaster richColors position="top-center" />
         </div>
     );
 }

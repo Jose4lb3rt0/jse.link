@@ -1,36 +1,8 @@
 "use client"
 
-import { useUrls } from "@/hooks/useUrls"
-import { UrlFormData, urlSchema } from "@/schemas/urlSchema"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { FormEvent, useState } from "react"
-import { useForm } from "react-hook-form"
-import { Toaster } from "sonner"
 import Shortener from "./components/Shortener"
 
 export default function Home() {
-  const [url, setUrl] = useState("")
-  const { createUrl } = useUrls()
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors }
-  } = useForm<UrlFormData>({
-    resolver: zodResolver(urlSchema)
-  })
-
-  const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000"
-
-  const onSubmit = (data: UrlFormData) => {
-    createUrl.mutate(data.originalUrl, { /*onSuccess: (res) => reset()*/ })
-  }
-
-  const shortUrl = createUrl.data?.data?.shortId
-    ? `${API_BASE_URL}/${createUrl.data.data.shortId}`
-    : null
-
   return (
     <>
       {/* Hero */}
