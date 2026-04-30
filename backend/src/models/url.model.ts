@@ -1,11 +1,13 @@
-import { Document, model, Schema } from "mongoose";
-import { nanoid } from "nanoid";
+import { Document, model, Schema } from "mongoose"
+import { nanoid } from "nanoid"
 
 export interface IURL extends Document {
     shortId: string
     originalUrl: string
     clicks: number
+    expiresAt?: Date | null
     createdAt: Date
+    updatedAt: Date
 }
 
 const urlSchema = new Schema<IURL>(
@@ -14,36 +16,27 @@ const urlSchema = new Schema<IURL>(
             type: String,
             required: true,
             unique: true,
-            default: () => nanoid(6)
+            default: () => nanoid(6),
+            index: true,
         },
         originalUrl: {
             type: String,
             required: true,
             trim: true,
-            validate: {
-                validator: (value: string) => {
-                    try {
-                        new URL(value)
-                        return true
-                    } catch (error) {
-                        return false
-                    }
-                },
-
-                message: "La URL proporcionada no es válida."
-            }
+            maxlength: 2048,
         },
         clicks: {
             type: Number,
-            required: true,
             default: 0,
+        },
+        expiresAt: {
+            type: Date,
+            default: null,
+            index: { expireAfterSeconds: 0 },
         },
     },
     {
-        timestamps: {
-            createdAt: true,
-            updatedAt: true
-        }
+        timestamps: true,
     }
 )
 

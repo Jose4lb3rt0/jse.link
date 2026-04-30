@@ -16,19 +16,23 @@ app.use(morgan("tiny"))
 app.use(cors())
 app.set('etag', false)
 
-// APIs
-routeHandler(app, 'api')
-docsHandler(app, 'docs')
-
 app.get('/', (req, res) => res.redirect('/api'))
 
 app.get('/api', (req, res) => {
     res.status(200).json({
+        success: true,
+        message: "API disponible.",
+        data: {
         name: PKG.name,
         author: PKG.author,
         description: PKG.description,
         version: PKG.version
+        }
     })
 })
+
+// APIs
+docsHandler(app, 'docs')
+routeHandler(app, 'api')
 
 export default app

@@ -1,15 +1,14 @@
 import { createClient } from "redis"
 import { env } from "./env"
-import { logger } from "../utils/logger"
 
 const redisClient = createClient({ url: env.redisUrl })
 
 redisClient.on("error", (error) => {
-    logger.warn("redis_connection_error", { error: error.message })
+    console.error("Redis Error: ", error.message)
 })
 
 redisClient.on("ready", () => {
-    logger.info("redis_ready", { url: env.redisUrl })
+    console.info("Redis Ready: ", { url: env.redisUrl })
 })
 
 export const connectRedis = async () => {
@@ -17,12 +16,10 @@ export const connectRedis = async () => {
 
     try {
         await redisClient.connect()
-        logger.info("redis_succesfully_connected")
+        console.log("Redis conectado")
     } catch (error) {
-        logger.warn("redis_initial_connection_failed", {
-            error: error instanceof Error ? error.message : String(error),
-            fallback: "mongo_only_mode",
-        })
+        console.warn("Redis no disponible. La app seguirá funcionando sin cache compartido.")
+        console.warn(error)
     }
 }
 

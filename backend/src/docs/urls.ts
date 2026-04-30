@@ -5,6 +5,13 @@
  *     summary: Crea una URL corta
  *     tags:
  *       - URLs
+ *     parameters:
+ *       - in: header
+ *         name: x-api-key
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: API key para permitir la creación de URLs
  *     requestBody:
  *       required: true
  *       content:
@@ -23,13 +30,17 @@
  *                   $ref: "#/components/schemas/UrlModel"
  *       '400':
  *         description: Solicitud inválida
+ *       '401':
+ *         description: API key inválida o ausente
+ *       '429':
+ *         description: Límite de requests excedido
  *       '500':
  *         description: Error interno
  */
 
 /**
  * @openapi
- * /api/urls/{shortId}:
+ * /{shortId}:
  *   get:
  *     summary: Redirige a la URL original
  *     tags:

@@ -2,64 +2,108 @@ import URL, { IURL } from "../models/url.model"
 import { Request, Response } from "express"
 import { ApiResponse } from "../types/Response"
 import redisClient from "../config/redisClient"
+import { env } from "../config/env"
 
-export const createUrl = async (req: Request, res: Response<ApiResponse<IURL>>) => {
+type CreateShortUrlInput = {
+    originalUrl: string
+    ttlSeconds?: number
+    ip: string
+}
+
+const getCacheKey = (shortId: string) => `redirect:${shortId}`
+
+const saveInCache = async (shortId: string, originalUrl: string, ttlSeconds?: number) => {
+    if (!redisClient.isReady) return
+
     try {
-        const { originalUrl } = req.body
+        const seconds = ttlSeconds && ttlSeconds > 0 ? ttlSeconds : env.defaultCacheSeconds
 
-        if (!originalUrl) {
-            return res.status(404).json({
-                success: false,
-                message: "La URL original es obligatoria.",
-            })
+        if (seconds > 0) {
+            await redisClient.set(getCacheKey(shortId), originalUrl, { EX: seconds })
+            return
         }
 
-        const nuevaUrl = await URL.create({ originalUrl })
-
-        await redisClient.set(nuevaUrl.shortId, nuevaUrl.originalUrl) // <-- key: value
-
-        return res.status(201).json({
-            success: true,
-            message: "Se ha creado la URL correctamente.",
-            data: nuevaUrl
-        })
+        await redisClient.set(getCacheKey(shortId), originalUrl)
     } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Hubo un error al crear la URL."
-        })
+        console.warn("No se pudo guardar en Redis:", error)
     }
 }
 
-export const redirectToOriginal = async (req: Request, res: Response<ApiResponse>) => {
-    try {
-        const { shortId } = req.params // Es parámetro, no body
-        if (!shortId) return res.status(404).json({ success: false, message: "No se utilizó ningún URL." })
+export const createShortUrl = async ({ originalUrl, ttlSeconds, ip }: CreateShortUrlInput) => {
+    const expiresAt =
+        ttlSeconds && ttlSeconds > 0
+            ? new Date(Date.now() + ttlSeconds * 1000)
+            : env.defaultUrlTtlSeconds > 0
+                ? new Date(Date.now() + env.defaultUrlTtlSeconds * 1000)
+                : null
 
-        // REDIS CACHÉ
-        const cachedURL = await redisClient.get(shortId) // agarrar la key
-        if (cachedURL) {
-            console.log(`⚡ URL obtenida desde Redis: ${cachedURL}`)
+    const newUrl = await URL.create({
+        originalUrl,
+        expiresAt
+    })
 
-            await URL.updateOne({ shortId }, { $inc: { clicks: 1 } })
-            return res.redirect(cachedURL)
-        }
+    const cacheSeconds = expiresAt ? Math.max(1, Math.floor((expiresAt.getTime() - Date.now()) / 1000)) : undefined
+    await saveInCache(newUrl.shortId, newUrl.originalUrl, cacheSeconds)
 
-        // BUSQUEDA EN MONGO
-        const found = await URL.findOne({ shortId })
-        if (!found) return res.status(404).json({ success: false, message: "URL no encontrada." })
+    console.log(
+        JSON.stringify({
+            event: "url_created",
+            ip,
+            shortId: newUrl.shortId,
+            timestamp: new Date().toISOString(),
+        }),
+    )
 
-        found.clicks++
-        await found.save()
-
-        // SAVE EN REDIS
-        await redisClient.set(shortId, found.originalUrl)
-
-        return res.redirect(found.originalUrl)
-    } catch (error) {
-        return res.status(500).json({
-            success: false,
-            message: "Error al redirigir."
-        })
+    return {
+        shortId: newUrl.shortId,
+        shortUrl: `${env.baseUrl}/${newUrl.shortId}`,
+        originalUrl: newUrl.originalUrl,
+        clicks: newUrl.clicks,
+        expiresAt: newUrl.expiresAt || null,
+        createdAt: newUrl.createdAt,
+        note: "Integrar Google Safe Browsing o VirusTotal.",
     }
+}
+
+export const findOriginalUrl = async (shortId: string, ip: string) => {
+    console.log(
+        JSON.stringify({
+            event: "redirect_request",
+            ip,
+            shortId,
+            timestamp: new Date().toISOString(),
+        }),
+    )
+
+    if (redisClient.isReady) {
+        try {
+            const cachedUrl = await redisClient.get(getCacheKey(shortId))
+
+            if (cachedUrl) {
+                await URL.updateOne({ shortId }, { $inc: { clicks: 1 } })
+                return cachedUrl
+            }
+        } catch (error) {
+            console.warn("No se pudo leer Redis:", error)
+        }
+    }
+
+    const foundUrl = await URL.findOne({
+        shortId,
+        $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }]
+    })
+
+    if (!foundUrl) {
+        return null
+    }
+
+    await URL.updateOne({ shortId }, { $inc: { clicks: 1 } })
+
+    const cacheSeconds = foundUrl.expiresAt
+        ? Math.max(1, Math.floor((foundUrl.expiresAt.getTime() - Date.now()) / 1000))
+        : undefined
+
+    await saveInCache(foundUrl.shortId, foundUrl.originalUrl, cacheSeconds)
+
+    return foundUrl.originalUrl
 }
