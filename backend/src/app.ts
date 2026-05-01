@@ -8,9 +8,6 @@ import { env } from './config/env'
 
 const app = express()
 
-// setupDatabase()
-
-// Middlewares
 app.use(express.json())
 app.use(express.urlencoded({ extended: false }))
 app.use(morgan("tiny"))
@@ -20,8 +17,9 @@ app.use(cors({
         if (!origin || env.allowedOrigins.includes(origin)) {
             callback(null, true)
         } else {
-            console.error(`CORS bloqueado. Origen: ${origin}. Permitidos: ${env.allowedOrigins}`);
+            console.error(`CORS bloqueado. Origen: ${origin}. Permitidos: ${env.allowedOrigins}`)
             callback(new Error("Not allowed by CORS"));
+
         }
     },
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -48,7 +46,6 @@ app.get('/api', (req, res) => {
     })
 })
 
-// APIs
 docsHandler(app, 'docs')
 routeHandler(app, 'api')
 

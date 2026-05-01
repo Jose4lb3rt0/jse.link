@@ -1,7 +1,7 @@
 import URL, { IURL } from "../models/url.model"
 import { Request, Response } from "express"
 import { ApiResponse } from "../types/Response"
-import redisClient from "../config/redisClient"
+import { safeRedisGet, safeRedisSet } from "../config/redisClient"
 import { env } from "../config/env"
 
 type CreateShortUrlInput = {
@@ -13,20 +13,8 @@ type CreateShortUrlInput = {
 const getCacheKey = (shortId: string) => `redirect:${shortId}`
 
 const saveInCache = async (shortId: string, originalUrl: string, ttlSeconds?: number) => {
-    if (!redisClient.isReady) return
-
-    try {
-        const seconds = ttlSeconds && ttlSeconds > 0 ? ttlSeconds : env.defaultCacheSeconds
-
-        if (seconds > 0) {
-            await redisClient.set(getCacheKey(shortId), originalUrl, { EX: seconds })
-            return
-        }
-
-        await redisClient.set(getCacheKey(shortId), originalUrl)
-    } catch (error) {
-        console.warn("No se pudo guardar en Redis:", error)
-    }
+    const seconds = ttlSeconds && ttlSeconds > 0 ? ttlSeconds : env.defaultCacheSeconds
+    await safeRedisSet(getCacheKey(shortId), originalUrl, seconds)
 }
 
 export const createShortUrl = async ({ originalUrl, ttlSeconds, ip }: CreateShortUrlInput) => {
@@ -75,17 +63,11 @@ export const findOriginalUrl = async (shortId: string, ip: string) => {
         }),
     )
 
-    if (redisClient.isReady) {
-        try {
-            const cachedUrl = await redisClient.get(getCacheKey(shortId))
+    const cachedUrl = await safeRedisGet(getCacheKey(shortId))
 
-            if (cachedUrl) {
-                await URL.updateOne({ shortId }, { $inc: { clicks: 1 } })
-                return cachedUrl
-            }
-        } catch (error) {
-            console.warn("No se pudo leer Redis:", error)
-        }
+    if (cachedUrl) {
+        await URL.updateOne({ shortId }, { $inc: { clicks: 1 } })
+        return cachedUrl
     }
 
     const foundUrl = await URL.findOne({

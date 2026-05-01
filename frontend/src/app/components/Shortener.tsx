@@ -119,7 +119,7 @@ export default function Shortener() {
                 Los links se eliminan automáticamente al vencer su tiempo de expiración.
             </p>
 
-            <Toaster richColors position="top-center" />
+            {/* <Toaster richColors position="top-center" /> */}
         </div>
     );
 }

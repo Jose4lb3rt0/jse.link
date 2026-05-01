@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express"
-import redisClient from "../config/redisClient"
+import { safeRedisExpire, safeRedisIncr, safeRedisTtl } from "../config/redisClient"
 
 type LimitOptions = {
     keyPrefix: string
@@ -30,22 +30,18 @@ const increaseMemoryCounter = (key: string, windowSeconds: number) => {
 }
 
 const increaseCounter = async (key: string, windowSeconds: number) => {
-    if (!redisClient.isReady) {
+    const count = await safeRedisIncr(key)
+
+    if (count === null) {
         return increaseMemoryCounter(key, windowSeconds)
     }
 
-    try {
-        const count = await redisClient.incr(key)
-
-        if (count === 1) {
-            await redisClient.expire(key, windowSeconds)
-        }
-
-        const retryAfter = await redisClient.ttl(key)
-        return { count, retryAfter: retryAfter > 0 ? retryAfter : windowSeconds }
-    } catch {
-        return increaseMemoryCounter(key, windowSeconds)
+    if (count === 1) {
+        await safeRedisExpire(key, windowSeconds)
     }
+
+    const retryAfter = await safeRedisTtl(key)
+    return { count, retryAfter: retryAfter && retryAfter > 0 ? retryAfter : windowSeconds }
 }
 
 export const getClientIp = (req: Request) => {
