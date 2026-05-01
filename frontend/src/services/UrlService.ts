@@ -1,10 +1,18 @@
 import { apiFetch, API_BASE_URL } from "@/api/apibase";
 import { ApiResponse, ShortUrlResponse } from "@/types/api";
 
-export async function createUrl(originalUrl: string) {
+type CreateUrlInput = {
+    originalUrl: string
+    ttlSeconds?: number
+}
+
+export async function createUrl({ originalUrl, ttlSeconds }: CreateUrlInput) {
     return apiFetch<ApiResponse<ShortUrlResponse>>("/urls", {
         method: "POST",
-        body: JSON.stringify({ originalUrl })
+        body: JSON.stringify({
+            originalUrl,
+            ...(ttlSeconds ? { ttlSeconds } : {})
+        })
     })
 }
 
