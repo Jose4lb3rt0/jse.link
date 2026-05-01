@@ -7,7 +7,8 @@ import { env } from "./config/env"
 const server = createServer(app)
 
 const bootstrap = async () => {
-    await Promise.all([conectarDB(), connectRedis()])
+    await conectarDB()
+    void connectRedis()
 
     server.listen(env.port, () => {
         console.log(`Servidor corriendo en ${env.baseUrl}`)
